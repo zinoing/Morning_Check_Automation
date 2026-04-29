@@ -1,0 +1,6 @@
+name: test
+saved_at: '2026-04-29T20:32:46'
+steps:
+- action: win_run
+  command: notepad
+  wait_after: '2.0'

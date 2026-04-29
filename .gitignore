@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+output/
+dist/
+build/
+*.egg-info/
+Morning_Check_Automation-main/

@@ -28,15 +28,17 @@ except ImportError:
 
 import sys as _sys
 from pathlib import Path as _Path
-_sys.path.insert(0, str(_Path(__file__).parent))
+_root = str(_Path(__file__).parent.parent)
+if _root not in _sys.path:
+    _sys.path.insert(0, _root)
 
-from screen_capture import capture_and_preprocess, capture_screen, preprocess_for_ocr
+from ocr_core.screen_capture import capture_and_preprocess, capture_screen, preprocess_for_ocr
 
 
 # ── Tesseract path (bundled alongside .exe or system install) ─────────────────
 # When packaged with PyInstaller, tesseract.exe sits next to the .exe.
 # During development, point to your local Tesseract install.
-pytesseract.pytesseract.tesseract_cmd = r"C:\Users\CHOJIN\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 # ── Tesseract config ──────────────────────────────────────────────────────────

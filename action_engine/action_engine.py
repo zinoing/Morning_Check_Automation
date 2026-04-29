@@ -34,11 +34,13 @@ import pyautogui
 import pyautogui as pag
 
 # ── Project path setup ────────────────────────────────────────────────────────
-sys.path.insert(0, str(Path(__file__).parent.parent / "ocr_core"))
+_ROOT = Path(__file__).parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-from ocr_engine import find_text_on_screen, verify_text_exists, wait_for_text
-from screen_capture import capture_screen, save_screenshot
-from logger import RunSession, Status, ActionResult
+from ocr_core.ocr_engine import find_text_on_screen, verify_text_exists, wait_for_text
+from ocr_core.screen_capture import capture_screen, save_screenshot
+from ocr_core.logger import RunSession, Status, ActionResult
 
 # ── pyautogui safety settings ─────────────────────────────────────────────────
 pag.FAILSAFE = True        # move mouse to top-left corner to abort
