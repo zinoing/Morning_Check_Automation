@@ -1,0 +1,23 @@
+# Morning Check Automation — Phase 1 Dependencies
+# Install with: pip install -r requirements.txt
+
+# Screen capture (fast, lightweight, PyInstaller-friendly)
+mss==9.0.2
+
+# Image processing and preprocessing
+Pillow==10.4.0
+
+# Tesseract OCR Python wrapper
+pytesseract==0.3.13
+
+# GUI automation — click, type, key press (Phase 2)
+pyautogui==0.9.54
+
+# YAML config parsing (Phase 3)
+PyYAML==6.0.2
+
+# Excel report generation (Phase 4)
+openpyxl==3.1.5
+
+# Packaging (Phase 5) — install separately, not bundled
+# pyinstaller==6.10.0
