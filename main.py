@@ -25,8 +25,8 @@ for folder in ["output/screenshots", "output/logs", "output/reports", "configs"]
     (_ROOT / folder).mkdir(parents=True, exist_ok=True)
 
 # ── Launch GUI ────────────────────────────────────────────────────────────────
-from gui.app import MacroFlowApp
+from gui.app import SmartWorkerApp
 
 if __name__ == "__main__":
-    app = MacroFlowApp()
+    app = SmartWorkerApp()
     app.run()

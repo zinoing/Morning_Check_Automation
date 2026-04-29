@@ -71,14 +71,15 @@ class SequenceRunner:
         try:
             from ocr_core.logger import RunSession
             from action_engine.action_engine import (
-                open_app, win_run, maximize_window, ocr_click,
+                open_app, win_run, maximize_window, close_window, ocr_click,
                 ocr_click_and_type, type_text, key_press,
                 verify_text, wait, take_screenshot, run_batch,
             )
             import types
             ae = types.SimpleNamespace(
                 open_app=open_app, win_run=win_run,
-                maximize_window=maximize_window, ocr_click=ocr_click,
+                maximize_window=maximize_window, close_window=close_window,
+                ocr_click=ocr_click,
                 ocr_click_and_type=ocr_click_and_type, type_text=type_text,
                 key_press=key_press, verify_text=verify_text,
                 wait=wait, take_screenshot=take_screenshot,
@@ -130,7 +131,7 @@ class SequenceRunner:
         action = step.get("action", "")
 
         if action == "capture":
-            return ae.take_screenshot(session, step.get("label", "capture"))
+            return ae.take_screenshot(session, step.get("label", "capture"), step.get("save_dir", ""))
 
         elif action == "click":
             return ae.ocr_click(
@@ -140,6 +141,8 @@ class SequenceRunner:
                 offset_y=int(step.get("offset_y", 0)),
                 timeout=float(step.get("timeout", 10.0)),
                 double_click=bool(step.get("double_click", False)),
+                case_sensitive=bool(step.get("case_sensitive", False)),
+                fuzzy_match=bool(step.get("fuzzy_match", True)),
                 on_fail=step.get("on_fail", "warn"),
             )
 
@@ -151,6 +154,8 @@ class SequenceRunner:
                 offset_x=int(step.get("offset_x", 0)),
                 clear_first=bool(step.get("clear_first", True)),
                 timeout=float(step.get("timeout", 10.0)),
+                case_sensitive=bool(step.get("case_sensitive", False)),
+                fuzzy_match=bool(step.get("fuzzy_match", True)),
                 on_fail=step.get("on_fail", "warn"),
             )
 
@@ -197,6 +202,9 @@ class SequenceRunner:
 
         elif action == "maximize":
             return ae.maximize_window(session)
+
+        elif action == "close_window":
+            return ae.close_window(session)
 
         elif action == "wait":
             return ae.wait(

@@ -1,6 +1,11 @@
 name: test
-saved_at: '2026-04-29T20:32:46'
+saved_at: '2026-04-29T23:51:51'
 steps:
 - action: win_run
   command: notepad
   wait_after: '2.0'
+- action: typing
+  value: Hello World
+  speed_ms: '50'
+  press_enter: true
+- action: close_window

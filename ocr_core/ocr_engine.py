@@ -297,22 +297,30 @@ def wait_for_text(
     timeout: float = 15.0,
     poll_interval: float = 1.5,
     min_confidence: float = 50.0,
+    case_sensitive: bool = False,
+    exact: bool = False,
 ) -> Optional[TextMatch]:
     """
     Poll the screen until target text appears or timeout is reached.
-    Use this after opening an app to wait for it to fully load.
 
     Args:
         target: Text expected to appear.
         timeout: Max seconds to wait.
         poll_interval: Seconds between each check.
+        case_sensitive: If True, match exact case.
+        exact: If True, require whole-word match (no partial/fuzzy).
 
     Returns:
         TextMatch if found within timeout, None if timed out.
     """
     deadline = time.time() + timeout
     while time.time() < deadline:
-        match = find_text_on_screen(target, min_confidence=min_confidence)
+        match = find_text_on_screen(
+            target,
+            exact=exact,
+            case_sensitive=case_sensitive,
+            min_confidence=min_confidence,
+        )
         if match:
             return match
         time.sleep(poll_interval)

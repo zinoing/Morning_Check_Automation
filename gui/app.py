@@ -10,10 +10,10 @@ from gui.sequence_editor import SequenceEditor
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-class MacroFlowApp:
+class SmartWorkerApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("MacroFlow — Automation Engine")
+        self.root.title("SmartWorker")
         self.root.geometry("1160x780")
         self.root.minsize(900, 640)
         self.root.configure(bg=S.BG_SIDEBAR)
@@ -103,17 +103,9 @@ class MacroFlowApp:
         brand = tk.Frame(sb, bg=S.BG_SIDEBAR)
         brand.pack(fill=tk.X, padx=16, pady=(20, 24))
 
-        logo_bg = tk.Frame(brand, bg="#1E40AF", width=32, height=32)
-        logo_bg.pack(side=tk.LEFT)
-        logo_bg.pack_propagate(False)
-        tk.Label(logo_bg, text="M", font=(S.FONT, 14, "bold"),
-                 fg=S.TEXT_WHITE, bg="#1E40AF").place(relx=0.5, rely=0.5, anchor="center")
-
-        info = tk.Frame(brand, bg=S.BG_SIDEBAR)
-        info.pack(side=tk.LEFT, padx=(10, 0))
-        tk.Label(info, text="MacroFlow", font=S.F_BRAND,
+        tk.Label(brand, text="SmartWorker", font=S.F_BRAND,
                  fg=S.TEXT_WHITE, bg=S.BG_SIDEBAR).pack(anchor="w")
-        tk.Label(info, text="Automation Engine", font=S.F_XS,
+        tk.Label(brand, text="Work smarter. Not harder.", font=S.F_XS,
                  fg=S.TEXT_MUTED, bg=S.BG_SIDEBAR).pack(anchor="w")
 
         # Divider
@@ -177,6 +169,7 @@ class MacroFlowApp:
 
         # Left: back button + project name
         left = tk.Frame(bar, bg=S.BG_TOPBAR)
+        self._topbar_left = left
         left.pack(side=tk.LEFT, padx=(12, 0), pady=0, fill=tk.Y)
 
         self._btn_back = tk.Button(
@@ -287,7 +280,7 @@ class MacroFlowApp:
         scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 20))
 
         list_frame = tk.Frame(canvas, bg=S.BG_MAIN)
         win_id = canvas.create_window((0, 0), window=list_frame, anchor="nw")
@@ -548,12 +541,33 @@ class MacroFlowApp:
 
     # ── Actions ───────────────────────────────────────────────────────────────
 
+    def _enter_mini_mode(self):
+        self._normal_geometry = self.root.geometry()
+        self._sidebar.pack_forget()
+        self._content.pack_forget()
+        self._bottombar.pack_forget()
+        self._topbar_left.pack_forget()
+        self._btn_run.pack_forget()
+        self.root.minsize(0, 0)
+        self.root.geometry(f"120x{S.TOPBAR_H}")
+
+    def _exit_mini_mode(self):
+        self._bottombar.pack_forget()
+        self._sidebar.pack(side=tk.LEFT, fill=tk.Y, before=self._main)
+        self._sidebar.pack_propagate(False)
+        self._topbar_left.pack(side=tk.LEFT, padx=(12, 0), fill=tk.Y)
+        self._btn_run.pack(side=tk.LEFT)
+        self._content.pack(fill=tk.BOTH, expand=True)
+        self._bottombar.pack(fill=tk.X, side=tk.BOTTOM)
+        self.root.minsize(900, 640)
+        self.root.geometry(self._normal_geometry)
+
     def _on_run(self):
         if self._editor:
             self._btn_run.config(state=tk.DISABLED)
             self._btn_stop.config(state=tk.NORMAL)
+            self._enter_mini_mode()
             self._editor.start_run()
-            # re-enable run button after run (poll)
             self._poll_run_done()
 
     def _poll_run_done(self):
@@ -562,11 +576,13 @@ class MacroFlowApp:
         else:
             self._btn_run.config(state=tk.NORMAL)
             self._btn_stop.config(state=tk.NORMAL)
+            self._exit_mini_mode()
 
     def _on_stop(self):
         if self._editor:
             self._editor.stop_run()
         self._btn_run.config(state=tk.NORMAL)
+        self._exit_mini_mode()
 
     def _on_save(self):
         if self._editor:

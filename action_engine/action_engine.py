@@ -30,6 +30,7 @@ import webbrowser
 from pathlib import Path
 from typing import Optional
 
+import ctypes
 import pyautogui
 import pyautogui as pag
 
@@ -45,6 +46,58 @@ from ocr_core.logger import RunSession, Status, ActionResult
 # ── pyautogui safety settings ─────────────────────────────────────────────────
 pag.FAILSAFE = True        # move mouse to top-left corner to abort
 pag.PAUSE    = 0.3         # small pause between every pyautogui call
+
+# ── Windows keybd_event API (bypasses SendInput limitations) ─────────────────
+# pyautogui uses SendInput which can be blocked by UIPI or certain apps.
+# keybd_event is a lower-level API that works more reliably for hotkeys.
+_user32 = ctypes.windll.user32
+
+# Virtual key codes
+_VK = {
+    "alt":     0x12,
+    "ctrl":    0x11,
+    "shift":   0x10,
+    "win":     0x5B,
+    "enter":   0x0D,
+    "escape":  0x1B,
+    "tab":     0x09,
+    "delete":  0x2E,
+    "f1":      0x70, "f2": 0x71, "f3": 0x72, "f4":  0x73,
+    "f5":      0x74, "f6": 0x75, "f7": 0x76, "f8":  0x77,
+    "f9":      0x78, "f10":0x79, "f11":0x7A, "f12": 0x7B,
+    "up":      0x26, "down": 0x28, "left": 0x25, "right": 0x27,
+    "home":    0x24, "end": 0x23, "pageup": 0x21, "pagedown": 0x22,
+    "space":   0x20, "backspace": 0x08,
+}
+
+KEYEVENTF_KEYUP = 0x0002
+
+def _vk(key: str) -> int:
+    """Get virtual key code for a key name."""
+    key = key.lower()
+    if key in _VK:
+        return _VK[key]
+    # Single character keys: use VkKeyScan
+    if len(key) == 1:
+        return _user32.VkKeyScanW(ord(key)) & 0xFF
+    raise ValueError(f"Unknown key: {key!r}")
+
+def _kb_send(key: str, key_up: bool = False):
+    """Send a single key event via keybd_event."""
+    vk = _vk(key)
+    flags = KEYEVENTF_KEYUP if key_up else 0
+    _user32.keybd_event(vk, 0, flags, 0)
+
+def _hotkey_api(*keys: str):
+    """
+    Press a hotkey combination using keybd_event Windows API.
+    More reliable than pyautogui for system-level shortcuts like Alt+F4.
+    """
+    for k in keys:
+        _kb_send(k, key_up=False)
+    time.sleep(0.05)
+    for k in reversed(keys):
+        _kb_send(k, key_up=True)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -168,6 +221,24 @@ def maximize_window(
         return _log(session, "maximize_window", description, True, "Window maximized")
     except Exception as e:
         return _log(session, "maximize_window", description, False, f"Failed: {e}", on_fail="warn")
+
+
+def close_window(
+    session: RunSession,
+    wait_after: float = 1.0,
+) -> ActionResult:
+    """
+    Close the currently active window using Alt+F4 via Windows keybd_event API.
+    keybd_event bypasses pyautogui SendInput limitations and works reliably
+    for system-level shortcuts that SendInput cannot deliver.
+    """
+    description = "Close active window"
+    try:
+        _hotkey_api("alt", "f4")
+        time.sleep(wait_after)
+        return _log(session, "close_window", description, True, "Window closed")
+    except Exception as e:
+        return _log(session, "close_window", description, False, f"Failed: {e}", on_fail="warn")
 
 
 def ocr_click(
@@ -316,10 +387,14 @@ def key_press(
     description = f"Key press: {keys}"
     try:
         if "+" in keys:
+            # Use keybd_event API for combos — more reliable than pyautogui
+            # SendInput for system shortcuts (Alt+F4, Win+R, Ctrl+A, etc.)
             parts = keys.split("+")
-            pag.hotkey(*parts)
+            _hotkey_api(*parts)
         else:
+            # Single keys: pyautogui is fine
             pag.press(keys)
+
         time.sleep(wait_after)
         return _log(session, "key_press", description, True, f"Pressed: {keys}")
     except Exception as e:
@@ -377,17 +452,28 @@ def wait(
 def take_screenshot(
     session: RunSession,
     label: str,
+    save_dir: str = "",
 ) -> ActionResult:
     """
-    Capture and save a named screenshot for the report.
+    Capture the full screen and save as a PNG.
 
     Args:
-        label: Descriptive name embedded in the filename.
+        label   : Name embedded in the filename.
+        save_dir: Directory to save into. Defaults to output/screenshots.
     """
     description = f"Screenshot: {label}"
     try:
-        shot = _screenshot_on_action(label)
-        return _log(session, "take_screenshot", description, True, f"Saved: {shot.name}", shot)
+        img = capture_screen()
+        timestamp = __import__("datetime").datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{label}_{timestamp}.png"
+        if save_dir:
+            out = Path(save_dir) / filename
+            out.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            from ocr_core.screen_capture import SCREENSHOT_DIR
+            out = SCREENSHOT_DIR / filename
+        img.save(str(out))
+        return _log(session, "take_screenshot", description, True, f"Saved: {out.name}", out)
     except Exception as e:
         return _log(session, "take_screenshot", description, False, f"Failed: {e}", on_fail="warn")
 

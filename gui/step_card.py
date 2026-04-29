@@ -28,6 +28,7 @@ ACTION_LABELS = [
     "Wait",
     "Run Batch",
     "Maximize",
+    "Close Active Window",
 ]
 
 # action label → internal action key
@@ -42,7 +43,8 @@ ACTION_KEY = {
     "Win+R":        "win_run",
     "Wait":         "wait",
     "Run Batch":    "run_batch",
-    "Maximize":     "maximize",
+    "Maximize":             "maximize",
+    "Close Active Window":  "close_window",
 }
 
 CONTENT_TYPES = {
@@ -56,7 +58,8 @@ CONTENT_TYPES = {
     "win_run":    ["Text"],
     "wait":       ["—"],
     "run_batch":  ["File"],
-    "maximize":   ["—"],
+    "maximize":      ["—"],
+    "close_window":  ["—"],
 }
 
 ON_FAIL_OPTIONS = ["warn", "stop", "skip"]
@@ -205,8 +208,8 @@ class StepCard(tk.Frame):
             hdr,
             text=f"{self.index:02d}",
             font=(S.FONT, 10, "bold"),
-            fg=S.TEXT_MUTED,
-            bg="#F1F5F9",
+            fg=S.TEXT_WHITE,
+            bg=S.BG_SIDEBAR,
             width=3,
             relief=tk.FLAT,
             padx=4,
@@ -275,7 +278,8 @@ class StepCard(tk.Frame):
             "win_run":    self._params_win_run,
             "wait":       self._params_wait,
             "run_batch":  self._params_run_batch,
-            "maximize":   self._params_maximize,
+            "maximize":      self._params_maximize,
+            "close_window":  self._params_close_window,
         }.get(action, self._params_maximize)
 
         builder()
@@ -287,60 +291,30 @@ class StepCard(tk.Frame):
 
     def _params_capture(self):
         f = self._param_frame
-        _section_label(f, "SCREENSHOT LABEL").pack(anchor="w")
+
+        _section_label(f, "SCREENSHOT NAME").pack(anchor="w")
         v = tk.StringVar()
         _entry(f, textvariable=v).pack(fill=tk.X, pady=(3, 10))
         self._param_widgets["label"] = v
 
-        # Image preview area
-        prev = tk.Frame(f, bg="#F1F5F9", relief=tk.FLAT, bd=1)
-        prev.pack(fill=tk.X, pady=(0, 8))
-
-        self._thumb_label = tk.Label(
-            prev, bg="#F1F5F9",
-            text="No anchor image selected",
-            font=S.F_SM, fg=S.TEXT_MUTED,
-        )
-        self._thumb_label.pack(pady=24)
-
-        # Image path
+        _section_label(f, "SAVE LOCATION").pack(anchor="w")
+        loc_row = tk.Frame(f, bg=S.BG_CARD)
+        loc_row.pack(fill=tk.X, pady=(3, 10))
         v2 = tk.StringVar()
-        self._param_widgets["image_path"] = v2
+        _entry(loc_row, textvariable=v2).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        tk.Button(
+            loc_row, text="Browse",
+            font=S.F_SM, fg=S.TEXT_SECONDARY, bg=S.BG_CARD,
+            relief=tk.GROOVE, bd=1, padx=10, pady=3, cursor="hand2",
+            activebackground="#F1F5F9",
+            command=lambda: self._pick_save_dir(v2),
+        ).pack(side=tk.LEFT)
+        self._param_widgets["save_dir"] = v2
 
-        btn_row = tk.Frame(f, bg=S.BG_CARD)
-        btn_row.pack(anchor="w")
-        for txt, cmd in [("Replace", lambda: self._pick_image(v2)), ("Crop", lambda: None)]:
-            tk.Button(
-                btn_row, text=txt,
-                font=S.F_SM, fg=S.TEXT_SECONDARY, bg=S.BG_CARD,
-                relief=tk.GROOVE, bd=1, padx=10, pady=3, cursor="hand2",
-                activebackground="#F1F5F9",
-                command=cmd,
-            ).pack(side=tk.LEFT, padx=(0, 6))
-
-    def _pick_image(self, var: tk.StringVar):
-        path = filedialog.askopenfilename(
-            title="Select anchor image",
-            filetypes=[("PNG files", "*.png"), ("All images", "*.png *.jpg *.bmp")],
-        )
-        if not path:
-            return
-        var.set(path)
-        if PIL_OK:
-            try:
-                img = Image.open(path)
-                img.thumbnail((220, 130), Image.LANCZOS)
-                self._thumb_img = ImageTk.PhotoImage(img)
-                self._thumb_label.config(image=self._thumb_img, text="")
-                # show filename below
-                name_lbl = tk.Label(
-                    self._thumb_label.master,
-                    text=Path(path).name,
-                    font=S.F_SM, fg=S.TEXT_SECONDARY, bg="#F1F5F9",
-                )
-                name_lbl.pack(pady=(0, 6))
-            except Exception:
-                self._thumb_label.config(text=Path(path).name)
+    def _pick_save_dir(self, var: tk.StringVar):
+        path = filedialog.askdirectory(title="Select save location")
+        if path:
+            var.set(path)
 
     def _params_click(self):
         f = self._param_frame
@@ -350,13 +324,17 @@ class StepCard(tk.Frame):
         self._param_widgets["find_text"] = v
 
         chk_row = tk.Frame(f, bg=S.BG_CARD)
-        chk_row.pack(anchor="w", pady=(0, 6))
+        chk_row.pack(anchor="w", pady=(0, 2))
         cs = tk.BooleanVar(value=False)
         fm = tk.BooleanVar(value=True)
         _check(chk_row, "Case Sensitive", cs).pack(side=tk.LEFT, padx=(0, 12))
         _check(chk_row, "Fuzzy Match", fm).pack(side=tk.LEFT)
         self._param_widgets["case_sensitive"] = cs
         self._param_widgets["fuzzy_match"] = fm
+
+        desc_row = tk.Frame(f, bg=S.BG_CARD)
+        desc_row.pack(anchor="w", pady=(0, 6))
+        _label(desc_row, "Case Sensitive: 대소문자 구분   /   Fuzzy Match: 부분 일치 허용", fg=S.TEXT_MUTED, font=S.F_XS).pack(side=tk.LEFT)
 
         self._extra_row(f, [
             ("Offset X", "offset_x", "0", 6),
@@ -379,6 +357,19 @@ class StepCard(tk.Frame):
         v2 = tk.StringVar()
         _entry(f, textvariable=v2).pack(fill=tk.X, pady=(3, 8))
         self._param_widgets["type_text"] = v2
+
+        chk_row2 = tk.Frame(f, bg=S.BG_CARD)
+        chk_row2.pack(anchor="w", pady=(0, 2))
+        cs2 = tk.BooleanVar(value=False)
+        fm2 = tk.BooleanVar(value=True)
+        _check(chk_row2, "Case Sensitive", cs2).pack(side=tk.LEFT, padx=(0, 12))
+        _check(chk_row2, "Fuzzy Match", fm2).pack(side=tk.LEFT)
+        self._param_widgets["case_sensitive"] = cs2
+        self._param_widgets["fuzzy_match"] = fm2
+
+        desc_row2 = tk.Frame(f, bg=S.BG_CARD)
+        desc_row2.pack(anchor="w", pady=(0, 6))
+        _label(desc_row2, "Case Sensitive: 대소문자 구분   /   Fuzzy Match: 부분 일치 허용", fg=S.TEXT_MUTED, font=S.F_XS).pack(side=tk.LEFT)
 
         self._extra_row(f, [
             ("Offset X", "offset_x", "0", 6),
@@ -502,6 +493,9 @@ class StepCard(tk.Frame):
 
     def _params_maximize(self):
         _label(self._param_frame, "No parameters required.", fg=S.TEXT_MUTED).pack(anchor="w")
+
+    def _params_close_window(self):
+        _label(self._param_frame, "Closes the active window with Alt+F4.", fg=S.TEXT_MUTED).pack(anchor="w")
 
     # ── Shared helpers ────────────────────────────────────────────────────────
 

@@ -151,7 +151,7 @@ class SequenceEditor(tk.Frame):
 
     def _delete_step(self, card: StepCard):
         if len(self._steps) == 1:
-            messagebox.showinfo("MacroFlow", "At least one step is required.")
+            messagebox.showinfo("SmartWorker", "At least one step is required.")
             return
         self._steps.remove(card)
         self._rerender_steps()
