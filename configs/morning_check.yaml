@@ -1,0 +1,13 @@
+name: morning_check
+saved_at: '2026-04-30T16:58:39'
+steps:
+- action: win_run
+  command: mstsc
+  wait_after: '2.0'
+- action: key_press
+  keys: enter
+  wait_after: '0.5'
+- action: typing
+  value: JyivZwd9uhj90HxM6xFgig1K6GCV14DNL3gnFW2PDC9GAUpaGM9BfjLgefHGblz2
+  speed_ms: '50'
+  press_enter: true

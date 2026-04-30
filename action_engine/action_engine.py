@@ -30,10 +30,14 @@ import webbrowser
 from pathlib import Path
 from typing import Optional
 import traceback
+import pyperclip
+import win32gui
+import win32con
 
 import ctypes
 import pyautogui
 import pyautogui as pag
+import pygetwindow as gw
 
 # ── Project path setup ────────────────────────────────────────────────────────
 _ROOT = Path(__file__).parent.parent
@@ -241,6 +245,40 @@ def close_window(
     except Exception as e:
         return _log(session, "close_window", description, False, f"Failed: {e}", on_fail="warn")
 
+def type_secure(text: str):
+    """보안 다이얼로그에서도 동작하는 타이핑 — 클립보드 경유"""
+    pyperclip.copy(text)
+    time.sleep(0.3)
+    _hotkey_api("ctrl", "v")  # 이미 있는 keybd_event 기반 함수
+    time.sleep(0.3)
+    pyperclip.copy("")  # 보안을 위해 클립보드 즉시 비우기
+
+def focus_window(
+    session: RunSession,
+    title_contains: str,
+    wait_after: float = 0.5,
+    on_fail: str = "warn",
+) -> ActionResult:
+    """
+    타이틀에 특정 문자열이 포함된 창으로 포커스 이동.
+    예: focus_window(session, "53.91.155.167")
+    """
+    description = f"Focus window: '{title_contains}'"
+    try:
+        windows = gw.getWindowsWithTitle(title_contains)
+        if not windows:
+            return _log(session, "focus_window", description, False,
+                       f"Window not found: '{title_contains}'", on_fail=on_fail)
+        
+        win = windows[0]
+        win.restore()          # 최소화 상태면 복원
+        win.activate()         # 포커스 이동
+        time.sleep(wait_after)
+        return _log(session, "focus_window", description, True,
+                   f"Focused: '{win.title}'")
+    except Exception as e:
+        return _log(session, "focus_window", description, False,
+                   f"Failed: {e}", on_fail=on_fail)
 
 def ocr_click(
     session: RunSession,
@@ -343,7 +381,6 @@ def ocr_click_and_type(
         shot = _screenshot_on_action("type_error")
         return _log(session, "ocr_click_and_type", description, False, f"Type failed: {e}", shot, on_fail)
 
-
 def type_text(
     session: RunSession,
     text: str,
@@ -351,10 +388,6 @@ def type_text(
     wait_after: float = 0.3,
     on_fail: str = "warn",
 ) -> ActionResult:
-    """
-    Type text into the currently focused window.
-    Use after clicking a field manually or after ocr_click().
-    """
     description = f"Type: '{text}'"
     try:
         pag.typewrite(text, interval=interval)
@@ -362,7 +395,6 @@ def type_text(
         return _log(session, "type_text", description, True, f"Typed: '{text}'")
     except Exception as e:
         return _log(session, "type_text", description, False, f"Failed: {e}", on_fail=on_fail)
-
 
 def key_press(
     session: RunSession,

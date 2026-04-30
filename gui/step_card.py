@@ -29,6 +29,7 @@ ACTION_LABELS = [
     "Run Batch",
     "Maximize",
     "Close Active Window",
+    "Focus Window",
 ]
 
 # action label → internal action key
@@ -45,6 +46,7 @@ ACTION_KEY = {
     "Run Batch":    "run_batch",
     "Maximize":             "maximize",
     "Close Active Window":  "close_window",
+    "Focus Window": "focus_window"
 }
 
 CONTENT_TYPES = {
@@ -60,6 +62,7 @@ CONTENT_TYPES = {
     "run_batch":  ["File"],
     "maximize":      ["—"],
     "close_window":  ["—"],
+    "focus_window":  ["Text"],
 }
 
 ON_FAIL_OPTIONS = ["warn", "stop", "skip"]
@@ -280,6 +283,7 @@ class StepCard(tk.Frame):
             "run_batch":  self._params_run_batch,
             "maximize":      self._params_maximize,
             "close_window":  self._params_close_window,
+            "focus_window":  self._params_focus_window,
         }.get(action, self._params_maximize)
 
         builder()
@@ -496,6 +500,15 @@ class StepCard(tk.Frame):
 
     def _params_close_window(self):
         _label(self._param_frame, "Closes the active window with Alt+F4.", fg=S.TEXT_MUTED).pack(anchor="w")
+
+    def _params_focus_window(self):
+        f = self._param_frame
+        _section_label(f, "WINDOW TITLE (contains)").pack(anchor="w")
+        v = tk.StringVar()
+        _entry(f, textvariable=v).pack(fill=tk.X, pady=(3, 8))
+        self._param_widgets["title_contains"] = v
+        self._extra_row(f, [("Wait after (s)", "wait_after", "0.5", 6)])
+        self._on_fail_row(f)
 
     # ── Shared helpers ────────────────────────────────────────────────────────
 

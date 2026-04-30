@@ -73,7 +73,7 @@ class SequenceRunner:
             from action_engine.action_engine import (
                 open_app, win_run, maximize_window, close_window, ocr_click,
                 ocr_click_and_type, type_text, key_press,
-                verify_text, wait, take_screenshot, run_batch,
+                verify_text, wait, take_screenshot, run_batch, focus_window
             )
             import types
             ae = types.SimpleNamespace(
@@ -83,7 +83,7 @@ class SequenceRunner:
                 ocr_click_and_type=ocr_click_and_type, type_text=type_text,
                 key_press=key_press, verify_text=verify_text,
                 wait=wait, take_screenshot=take_screenshot,
-                run_batch=run_batch,
+                run_batch=run_batch, focus_window=focus_window,
             )
         except Exception as e:
             msg = f"Import error: {e}"
@@ -220,6 +220,14 @@ class SequenceRunner:
                 session,
                 seconds=float(step.get("seconds", 1.0)),
                 reason=step.get("reason", ""),
+            )
+
+        elif action == "focus_window":
+            return ae.focus_window(
+                session,
+                title_contains=step.get("title_contains", ""),
+                wait_after=float(step.get("wait_after", 0.5)),
+                on_fail=step.get("on_fail", "warn"),
             )
 
         elif action == "run_batch":

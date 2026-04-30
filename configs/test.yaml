@@ -1,0 +1,35 @@
+name: test
+saved_at: '2026-04-30T17:29:03'
+steps:
+- action: win_run
+  command: mstsc
+  wait_after: '2.0'
+- action: key_press
+  keys: enter
+  wait_after: '0.5'
+- action: focus_window
+  title_contains: Windows Security
+  wait_after: '0.5'
+  on_fail: warn
+- action: typing
+  value: JyivZwd9uhj90HxM6xFgig1K6GCV14DNL3gnFW2PDC9GAUpaGM9BfjLgefHGblz2
+  speed_ms: '50'
+  press_enter: true
+- action: focus_window
+  title_contains: Remote Desktop Connection
+  wait_after: '2'
+  on_fail: warn
+- action: run_batch
+  path: ''
+  wait_after: '3.0'
+  on_fail: warn
+- action: open_app
+  target: ''
+  wait_after: '2.0'
+  on_fail: warn
+- action: capture
+  label: ''
+  save_dir: ''
+- action: capture
+  label: ''
+  save_dir: ''
