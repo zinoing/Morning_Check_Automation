@@ -105,8 +105,17 @@ class SequenceRunner:
                 status = result.status.value if result else "SKIP"
                 message = result.message if result else "Skipped"
             except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
                 status = "FAIL"
-                message = str(e)
+                message = tb
+                from ocr_core.logger import Status
+                session.log(
+                    action=step.get("action", "unknown"),
+                    description=f"Step {idx+1} unexpected error",
+                    status=Status.FAIL,
+                    message=tb,
+                )
 
             results.append({"index": idx, "status": status, "message": message})
             self._after(0, lambda i=idx, s=status, m=message: self.on_step_done(i, s, m))

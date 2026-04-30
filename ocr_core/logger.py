@@ -143,15 +143,7 @@ class RunSession:
         self.logger.info(f"  {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         self.logger.info(f"{'='*60}")
 
-    def log(
-        self,
-        action: str,
-        description: str,
-        status: Status,
-        message: str,
-        screenshot_path: Optional[Path] = None,
-    ) -> ActionResult:
-        """Record an action result and log it to console + file."""
+    def log(self, action, description, status, message, screenshot_path=None) -> ActionResult:
         self._step += 1
         result = ActionResult(
             step_index=self._step,
@@ -164,7 +156,16 @@ class RunSession:
         self.results.append(result)
 
         tag = f"[{status.value}]"
-        self.logger.info(f"Step {self._step:02d} {tag:8s} {action:25s} {message}")
+        header = f"Step {self._step:02d} {tag:8s} {action:25s} {description}"
+        self.logger.info(header)
+
+        if message:
+            for line in message.splitlines():
+                self.logger.info(f"           ↳ {line}")
+
+        if screenshot_path:
+            self.logger.debug(f"            {screenshot_path}")
+
         return result
 
     def summary(self) -> dict:

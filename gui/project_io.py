@@ -61,7 +61,7 @@ def list_projects() -> list[Path]:
 
 _SETTINGS_PATH = CONFIGS_DIR / "settings.json"
 _DEFAULTS = {
-    "tesseract_path": r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    "tesseract_path": r"Put file address of tesseract.exe",
 }
 
 

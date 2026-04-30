@@ -11,6 +11,8 @@ Core OCR functions using Tesseract:
 import os
 import re
 import time
+import json
+from pathlib import Path
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -38,7 +40,12 @@ from ocr_core.screen_capture import capture_and_preprocess, capture_screen, prep
 # ── Tesseract path (bundled alongside .exe or system install) ─────────────────
 # When packaged with PyInstaller, tesseract.exe sits next to the .exe.
 # During development, point to your local Tesseract install.
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+_SETTINGS_PATH = Path(__file__).parent.parent / "configs" / "settings.json"
+with open(_SETTINGS_PATH, encoding="utf-8") as _f:
+    _settings = json.load(_f)
+pytesseract.pytesseract.tesseract_cmd = _settings.get(
+    "tesseract_path"
+)
 
 
 # ── Tesseract config ──────────────────────────────────────────────────────────

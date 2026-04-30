@@ -29,6 +29,7 @@ import subprocess
 import webbrowser
 from pathlib import Path
 from typing import Optional
+import traceback
 
 import ctypes
 import pyautogui
@@ -250,50 +251,44 @@ def ocr_click(
     wait_after: float = 0.5,
     timeout: float = 10.0,
     double_click: bool = False,
+    case_sensitive: bool = False,
+    fuzzy_match: bool = True,
     on_fail: str = "warn",
 ) -> ActionResult:
-    """
-    Find text on screen via OCR and click it (or click with an offset).
-
-    Args:
-        find_text   : Text to locate on screen.
-        offset_x    : Pixels to offset click from text center (e.g. 300 to
-                      click the Status column to the right of a service name).
-        offset_y    : Pixels to offset click vertically.
-        wait_before : Seconds to wait before searching (let UI settle).
-        wait_after  : Seconds to wait after clicking.
-        timeout     : Max seconds to wait for text to appear.
-        double_click: If True, double-click instead of single click.
-        on_fail     : "stop" | "warn" | "skip"
-    """
     description = f"OCR click: '{find_text}'"
     time.sleep(wait_before)
 
-    match = wait_for_text(find_text, timeout=timeout)
-    if not match:
-        shot = _screenshot_on_action("ocr_click_not_found")
-        return _log(
-            session, "ocr_click", description, False,
-            f"Text not found on screen: '{find_text}'", shot, on_fail,
-        )
+    try:                                          # ← wait_for_text도 try 안으로
+        match = wait_for_text(find_text, timeout=timeout, case_sensitive=case_sensitive, exact= not fuzzy_match,)
+        if not match:
+            shot = _screenshot_on_action("ocr_click_not_found")
+            return _log(
+                session, "ocr_click", description, False,
+                f"Text not found: '{find_text}'", shot, on_fail,
+            )
 
-    x = match.center_x + offset_x
-    y = match.center_y + offset_y
+        x = match.center_x + offset_x
+        y = match.center_y + offset_y
 
-    try:
         if double_click:
             pag.doubleClick(x, y)
         else:
             pag.click(x, y)
+
         time.sleep(wait_after)
         shot = _screenshot_on_action(f"ocr_click_{find_text[:20].replace(' ', '_')}")
         return _log(
             session, "ocr_click", description, True,
             f"Clicked '{find_text}' at ({x}, {y})", shot, on_fail,
         )
-    except Exception as e:
+
+    except Exception:                             # ← str(e) 대신 전체 traceback
         shot = _screenshot_on_action("ocr_click_error")
-        return _log(session, "ocr_click", description, False, f"Click failed: {e}", shot, on_fail)
+        return _log(
+            session, "ocr_click", description, False,
+            traceback.format_exc(),               # ← 핵심 변경
+            shot, on_fail,
+        )
 
 
 def ocr_click_and_type(
@@ -305,6 +300,8 @@ def ocr_click_and_type(
     clear_first: bool = True,
     wait_after: float = 0.5,
     timeout: float = 10.0,
+    case_sensitive: bool = False,
+    fuzzy_match: bool = True,
     on_fail: str = "warn",
 ) -> ActionResult:
     """
@@ -324,6 +321,7 @@ def ocr_click_and_type(
         session, find_text,
         offset_x=offset_x, offset_y=offset_y,
         timeout=timeout, on_fail=on_fail,
+        case_sensitive=case_sensitive, fuzzy_match=fuzzy_match,
     )
     if click_result.status == Status.FAIL:
         return click_result
